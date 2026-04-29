@@ -1,39 +1,25 @@
 import os
 import asyncio
-
 from pyrogram import Client, filters
-from pyrogram.types import (
-    Message,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
-)
-
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pytgcalls import PyTgCalls
 from pytgcalls.types import MediaStream
-
 import yt_dlp
 
 # ================== عدل بياناتك هنا ==================
 API_ID = 38266855
 API_HASH = "6cc39a629921d107b9f04f6510185f0e"
-BOT_TOKEN = "8612351805:AAHcWcM3z72IptY5XFby4j4mWUitv4kAeuY"
+BOT_TOKEN = "8612351805:AAG0ihwHKncgaj_bYADmThUBbzCXsyQ_CxU"
 SESSION_STRING = "AgJH5-cAFn8PoNaKAmPsUjG3jNHIZUBX1R2YgbsAGAo4qSKObNr0Be1b4YLnS7zTXNEzdcc5JxwRdAoTtP_zveSZxAuCeNZZjtmxmmdS-rr_J11cL49ss_AsOX4ft6ysyfzIzfVgkBPR4LSDwHDOS_tIPZv4mwqnF_iIZSZzM6jV-05SD-xzs00-ajXL_HIBO6kQYotvMvgoh1nfmYrq5TbUBNK4YSWK8_QaI8DVV3DEqP1Gw0GJR055wBeGKbpS0knf7T-37_gk3k1yJUM5p4DGPFIFhTjyNYXf6K10aTx_MfLNbc6ND0LOQcJwuvrBh4SRmqcILscXUN8HpRvXwlzc-B4ERQAAAAHgw6HVAA"
 
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
-
-# قناة الاشتراك الإجباري بدون @
 FORCE_CHANNEL = "fadifva"
 
 START_PHOTO = "https://i.ibb.co/xqVzNV7t/db72f6d6-2b6a-4f58-abdc-2f47a3aeb664.jpg"
 # ======================================================
 
-bot = Client(
-    "music_bot",
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=BOT_TOKEN
-)
+bot = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 assistant = Client(
     "assistant",
@@ -62,8 +48,31 @@ async def force_sub_message(message: Message):
         [InlineKeyboardButton("✅ تحقق من الاشتراك", callback_data="check_sub")]
     ])
     await message.reply(
-        "⚠️ عذراً، يجب عليك الاشتراك بقناة البوت أولاً حتى تستخدم الأوامر.",
+        "⚠️ عذراً، يجب عليك الاشتراك بقناة البوت أولاً.",
         reply_markup=keyboard
+    )
+
+
+def start_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("➕ اضفني", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")],
+        [
+            InlineKeyboardButton("📚 طريقة الاستخدام", callback_data="help_music"),
+            InlineKeyboardButton("👨‍💻 المطور", url=f"https://t.me/{DEV_USERNAME}")
+        ],
+        [InlineKeyboardButton("🛒 شراء بوت مشابه", url=f"https://t.me/{DEV_USERNAME}")]
+    ])
+
+
+def start_text():
+    return (
+        "• هلا بك في بوت ميوزك 🎧\n\n"
+        "• اضفني إلى مجموعتك وارفعني مشرف\n"
+        "• ضيف الحساب المساعد للكروب\n"
+        "• افتح مكالمة صوتية وشغل الأغاني\n\n"
+        "• أوامر التشغيل:\n"
+        "يوت فيروز\n"
+        "تشغيل فيروز"
     )
 
 
@@ -71,7 +80,7 @@ def download_audio(query: str):
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": "downloads/%(id)s.%(ext)s",
-        "cookiefile": "cookies.txt",
+        "cookiefile": "cookies.txt" if os.path.exists("cookies.txt") else None,
         "noplaylist": True,
         "quiet": True,
         "default_search": "ytsearch1",
@@ -93,48 +102,17 @@ def download_audio(query: str):
         return file_path, title
 
 
+async def play_file(chat_id, file_path):
+    await call.play(chat_id, MediaStream(file_path))
+
+
 async def play_next(chat_id):
     if chat_id not in queues or not queues[chat_id]:
         return None
 
     file_path, title = queues[chat_id].pop(0)
-
-    try:
-        await call.change_stream(chat_id, AudioPiped(file_path))
-    except:
-        await call.join_group_call(chat_id, AudioPiped(file_path))
-
+    await play_file(chat_id, file_path)
     return title
-
-
-def start_keyboard():
-    return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton(
-                "➕ اضفني",
-                url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
-            )
-        ],
-        [
-            InlineKeyboardButton("📚 طريقة الاستخدام", callback_data="help_music"),
-            InlineKeyboardButton("👨‍💻 المطور", url=f"https://t.me/{DEV_USERNAME}")
-        ],
-        [
-            InlineKeyboardButton("🛒 شراء بوت مشابه", url=f"https://t.me/{DEV_USERNAME}")
-        ]
-    ])
-
-
-def start_text():
-    return (
-        "• هلا بك في بوت ميوزك 🎧\n\n"
-        "• اضفني إلى مجموعتك وارفعني مشرف\n"
-        "• ضيف الحساب المساعد للكروب\n"
-        "• افتح مكالمة صوتية وشغل الأغاني\n\n"
-        "• أوامر التشغيل:\n"
-        "يوت فيروز\n"
-        "تشغيل فيروز"
-    )
 
 
 @bot.on_message(filters.command("start"))
@@ -233,11 +211,14 @@ async def skip(_, message: Message):
     if chat_id not in queues or not queues[chat_id]:
         return await message.reply("ماكو أغاني بالطابور.")
 
-    title = await play_next(chat_id)
-    if title:
-        await message.reply(f"⏭ تم التخطي وتشغيل:\n{title}")
-    else:
-        await message.reply("⏭ تم التخطي")
+    try:
+        title = await play_next(chat_id)
+        if title:
+            await message.reply(f"⏭ تم التخطي وتشغيل:\n{title}")
+        else:
+            await message.reply("ماكو أغاني بعدها.")
+    except Exception as e:
+        await message.reply(f"❌ خطأ بالتخطي:\n{e}")
 
 
 @bot.on_message(filters.regex(r"^(ايقاف|انهاء)$"))
@@ -249,7 +230,7 @@ async def stop(_, message: Message):
     queues[chat_id] = []
 
     try:
-        await call.leave_group_call(chat_id)
+        await call.leave_call(chat_id)
         await message.reply("⏹ تم إيقاف التشغيل والخروج من المكالمة")
     except:
         await message.reply("ماكو تشغيل حالياً.")
