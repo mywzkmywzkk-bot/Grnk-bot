@@ -44,21 +44,22 @@ def start_text():
     return (
         "• هلا بك في بوت ميوزك 🎧\n\n"
         "• اضفني إلى مجموعتك وارفعني مشرف\n"
-        "• اكتب اسم الأغنية والبوت يدزها ملف صوتي\n\n"
-        "• الأوامر:\n"
-        "يوت فيروز\n"
-        "تشغيل فيروز"
+        "• اكتب: يوت + اسم الأغنية\n"
+        "• البوت يبحث في SoundCloud ويدزها صوت\n\n"
+        "مثال:\n"
+        "يوت فيروز"
     )
 
 
 def download_audio(query):
+    search = f"scsearch1:{query}"
+
     opts = {
         "format": "bestaudio/best",
         "outtmpl": "downloads/%(id)s.%(ext)s",
-        "cookiefile": "cookies.txt" if os.path.exists("cookies.txt") else None,
         "noplaylist": True,
         "quiet": True,
-        "default_search": "ytsearch1",
+        "default_search": "scsearch1",
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
@@ -67,16 +68,24 @@ def download_audio(query):
     }
 
     with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(query, download=True)
+        info = ydl.extract_info(search, download=True)
+
         if "entries" in info:
             info = info["entries"][0]
-        return f"downloads/{info['id']}.mp3", info.get("title", "Audio")
+
+        file_path = f"downloads/{info['id']}.mp3"
+        title = info.get("title", "Audio")
+        return file_path, title
 
 
 @bot.message_handler(commands=["start"])
 def start(message):
     if not is_subscribed(message.from_user.id):
-        return bot.reply_to(message, "⚠️ اشترك بالقناة أولاً حتى تستخدم البوت", reply_markup=sub_keyboard())
+        return bot.reply_to(
+            message,
+            "⚠️ اشترك بالقناة أولاً حتى تستخدم البوت",
+            reply_markup=sub_keyboard()
+        )
 
     bot.send_photo(
         message.chat.id,
@@ -91,7 +100,12 @@ def callbacks(call):
     if call.data == "check_sub":
         if is_subscribed(call.from_user.id):
             bot.delete_message(call.message.chat.id, call.message.message_id)
-            bot.send_photo(call.message.chat.id, START_PHOTO, caption=start_text(), reply_markup=main_keyboard())
+            bot.send_photo(
+                call.message.chat.id,
+                START_PHOTO,
+                caption=start_text(),
+                reply_markup=main_keyboard()
+            )
         else:
             bot.answer_callback_query(call.id, "❌ بعدك ما مشترك", show_alert=True)
 
@@ -101,10 +115,12 @@ def callbacks(call):
             message_id=call.message.message_id,
             caption=(
                 "📚 طريقة الاستخدام:\n\n"
-                "• يوت + اسم الأغنية\n"
-                "• تشغيل + اسم الأغنية\n\n"
+                "اكتب:\n"
+                "يوت + اسم الأغنية\n"
+                "تشغيل + اسم الأغنية\n\n"
                 "مثال:\n"
-                "يوت فيروز سألوني الناس"
+                "يوت فيروز سألوني الناس\n\n"
+                "المصدر: SoundCloud"
             ),
             reply_markup=InlineKeyboardMarkup().add(
                 InlineKeyboardButton("🔙 رجوع", callback_data="back")
@@ -123,17 +139,27 @@ def callbacks(call):
 @bot.message_handler(func=lambda m: m.text and (m.text.startswith("يوت ") or m.text.startswith("تشغيل ")))
 def music(message):
     if not is_subscribed(message.from_user.id):
-        return bot.reply_to(message, "⚠️ اشترك بالقناة أولاً حتى تستخدم البوت", reply_markup=sub_keyboard())
+        return bot.reply_to(
+            message,
+            "⚠️ اشترك بالقناة أولاً حتى تستخدم البوت",
+            reply_markup=sub_keyboard()
+        )
 
     query = message.text.replace("يوت ", "", 1).replace("تشغيل ", "", 1)
-    msg = bot.reply_to(message, "🔎 جاري البحث والتحميل...")
+    msg = bot.reply_to(message, "🔎 جاري البحث في SoundCloud...")
 
     try:
         file_path, title = download_audio(query)
-        bot.edit_message_text("📤 جاري إرسال الأغنية...", message.chat.id, msg.message_id)
+
+        bot.edit_message_text("📤 جاري إرسال الصوت...", message.chat.id, msg.message_id)
 
         with open(file_path, "rb") as audio:
-            bot.send_audio(message.chat.id, audio, title=title, caption=f"🎧 {title}")
+            bot.send_audio(
+                message.chat.id,
+                audio,
+                title=title,
+                caption=f"🎧 {title}"
+            )
 
         bot.delete_message(message.chat.id, msg.message_id)
 
@@ -143,7 +169,11 @@ def music(message):
             pass
 
     except Exception as e:
-        bot.edit_message_text(f"❌ صار خطأ:\n{e}", message.chat.id, msg.message_id)
+        bot.edit_message_text(
+            f"❌ ما حصلت نتيجة أو صار خطأ:\n{e}",
+            message.chat.id,
+            msg.message_id
+        )
 
 
 print("Bot Running...")
