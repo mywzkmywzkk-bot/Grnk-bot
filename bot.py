@@ -3,7 +3,7 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
-BOT_TOKEN = "8612351805:AAHcWcM3z72IptY5XFby4j4mWUitv4kAeuY"
+BOT_TOKEN = "8612351805:AAHluc96sWAwmjz2SlSxlyljoElWz_KEjk4"
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
 FORCE_CHANNEL = "fadifva"
