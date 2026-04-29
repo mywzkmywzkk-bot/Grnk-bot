@@ -7,7 +7,7 @@ from pyrogram.types import (
     InlineKeyboardButton,
 )
 from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import AudioPiped
+from pytgcalls.types import AudioPiped
 import yt_dlp
 
 # ================== عدل بياناتك هنا ==================
