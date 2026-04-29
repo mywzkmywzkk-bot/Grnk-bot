@@ -3,18 +3,17 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
-BOT_TOKEN = "8612351805:AAG0ihwHKncgaj_bYADmThUBbzCXsyQ_CxU"
+BOT_TOKEN = "8612351805:AAHcWcM3z72IptY5XFby4j4mWUitv4kAeuY"
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
 FORCE_CHANNEL = "fadifva"
 
 START_PHOTO = "https://i.ibb.co/xqVzNV7t/db72f6d6-2b6a-4f58-abdc-2f47a3aeb664.jpg"
 
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 os.makedirs("downloads", exist_ok=True)
 
 
-# اشتراك إجباري
 def is_subscribed(user_id):
     try:
         m = bot.get_chat_member("@" + FORCE_CHANNEL, user_id)
@@ -42,23 +41,28 @@ def main_keyboard():
 
 def start_text():
     return (
-        "• أهلاً بك في بوت فادي 🎧\n\n"
+        "• أهلاً بك في بوت ميوزك 🎧\n\n"
         "• اكتب:\n"
-        "يوت + اسم الأغنية\n\n"
+        "يوت + اسم الأغنية\n"
+        "تشغيل + اسم الأغنية\n\n"
         "مثال:\n"
         "يوت فيروز"
     )
 
 
-# تحميل من SoundCloud بدون ffmpeg
 def download_audio(query):
     search = f"scsearch1:{query}"
 
     opts = {
-        "format": "bestaudio",
+        "format": "bestaudio[filesize<25M]/bestaudio",
         "outtmpl": "downloads/%(id)s.%(ext)s",
         "noplaylist": True,
         "quiet": True,
+        "no_warnings": True,
+        "socket_timeout": 20,
+        "retries": 5,
+        "fragment_retries": 5,
+        "concurrent_fragment_downloads": 5,
     }
 
     with yt_dlp.YoutubeDL(opts) as ydl:
@@ -75,7 +79,7 @@ def download_audio(query):
 @bot.message_handler(commands=["start"])
 def start(message):
     if not is_subscribed(message.from_user.id):
-        return bot.reply_to(message, "اشترك بالقناة أولاً", reply_markup=sub_keyboard())
+        return bot.reply_to(message, "⚠️ اشترك بالقناة أولاً", reply_markup=sub_keyboard())
 
     bot.send_photo(
         message.chat.id,
@@ -90,31 +94,46 @@ def callbacks(call):
     if call.data == "check_sub":
         if is_subscribed(call.from_user.id):
             bot.delete_message(call.message.chat.id, call.message.message_id)
-            start(call.message)
+            bot.send_photo(call.message.chat.id, START_PHOTO, caption=start_text(), reply_markup=main_keyboard())
         else:
             bot.answer_callback_query(call.id, "❌ بعدك ما مشترك", show_alert=True)
 
 
-@bot.message_handler(func=lambda m: m.text and m.text.startswith("يوت "))
+@bot.message_handler(func=lambda m: m.text and (m.text.startswith("يوت ") or m.text.startswith("تشغيل ")))
 def music(message):
     if not is_subscribed(message.from_user.id):
-        return bot.reply_to(message, "اشترك بالقناة أولاً", reply_markup=sub_keyboard())
+        return bot.reply_to(message, "⚠️ اشترك بالقناة أولاً", reply_markup=sub_keyboard())
 
-    query = message.text.replace("يوت ", "", 1)
-    msg = bot.reply_to(message, "🔎 جاري البحث...")
+    query = message.text.replace("يوت ", "", 1).replace("تشغيل ", "", 1).strip()
+
+    if not query:
+        return bot.reply_to(message, "اكتب اسم الأغنية بعد الأمر.")
+
+    msg = bot.reply_to(message, "🔎 جاري البحث والتحميل...")
 
     try:
         file_path, title = download_audio(query)
 
-        with open(file_path, "rb") as audio:
-            bot.send_audio(message.chat.id, audio, title=title)
+        bot.edit_message_text("📤 جاري إرسال الصوت...", message.chat.id, msg.message_id)
 
-        os.remove(file_path)
+        with open(file_path, "rb") as audio:
+            bot.send_voice(
+                message.chat.id,
+                audio,
+                caption=f"🎧 {title}",
+                reply_to_message_id=message.message_id
+            )
+
         bot.delete_message(message.chat.id, msg.message_id)
+
+        try:
+            os.remove(file_path)
+        except:
+            pass
 
     except Exception as e:
         bot.edit_message_text(f"❌ صار خطأ:\n{e}", message.chat.id, msg.message_id)
 
 
 print("Bot Running...")
-bot.infinity_polling()
+bot.infinity_polling(skip_pending=True)
