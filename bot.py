@@ -117,11 +117,13 @@ def music(message):
         bot.edit_message_text("📤 جاري إرسال الصوت...", message.chat.id, msg.message_id)
 
         with open(file_path, "rb") as audio:
-            bot.send_voice(
-                message.chat.id,
-                audio,
-                caption=f"🎧 {title}",
-                reply_to_message_id=message.message_id
+            bot.send_audio(
+    message.chat.id,
+    audio,
+    title=title,
+    performer="Song fadi",
+    caption=f"🎧 {title}",
+    reply_to_message_id=message.message_id
             )
 
         bot.delete_message(message.chat.id, msg.message_id)
