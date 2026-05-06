@@ -5,7 +5,7 @@ import yt_dlp
 
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-BOT_TOKEN = "8612351805:AAGGbYpRDFNUrZgpfa3XFKRRmi0MpwLPsYY"
+BOT_TOKEN = "8612351805:AAG8naVLAUW8jewL6RbyZyYOq-8cagw0ZpQ"
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
 FORCE_CHANNEL = "fadifva"
