@@ -22,7 +22,9 @@ def clean_filename(name):
 
 
 def is_subscribed(user_id):
+
     try:
+
         member = bot.get_chat_member(
             "@" + FORCE_CHANNEL,
             user_id
@@ -313,4 +315,4 @@ print("Bot Running...")
 
 bot.infinity_polling(
     skip_pending=True
-            )
+        )
