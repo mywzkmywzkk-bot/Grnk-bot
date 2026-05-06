@@ -75,7 +75,7 @@ def sub_buttons():
 def start_text():
     return (
         "• هلا بك في بوت ميوزك 🎧\n\n"
-        "• اضفني للكروب وارفعني مشرف\n"
+        "• اضفني للكروب وارفعني مشرف\n\n"
         "• اكتب:\n"
         "يوت اسم الاغنية\n"
         "تشغيل اسم الاغنية\n\n"
@@ -88,7 +88,7 @@ def start_text():
 def download_audio(query):
 
     ydl_opts = {
-        "format": "bestaudio/best",
+        "format": "bestaudio",
         "outtmpl": "downloads/%(title)s.%(ext)s",
         "cookiefile": "cookies.txt",
 
@@ -104,13 +104,6 @@ def download_audio(query):
         "socket_timeout": 60,
         "retries": 20,
         "fragment_retries": 20,
-        "ignoreerrors": False,
-
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "192",
-        }],
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -125,7 +118,7 @@ def download_audio(query):
 
         title = clean_filename(info.get("title", "song"))
 
-        file_path = f"downloads/{title}.mp3"
+        file_path = ydl.prepare_filename(info)
 
         return file_path, title
 
