@@ -4,7 +4,7 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
-BOT_TOKEN = "8612351805:AAE7e7ryfZZXJ20gKCtubJo873N3whyfct4"
+BOT_TOKEN = "8612351805:AAFNKU1istmFRWV7vcrSCU0o-aOwGEIXSv0"
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
 FORCE_CHANNEL = "fadifva"
@@ -88,22 +88,29 @@ def start_text():
 def download_audio(query):
 
     ydl_opts = {
-    "format": "bestaudio/best",
-    "outtmpl": "downloads/%(title)s.%(ext)s",
-    "cookiefile": "cookies.txt",
+        "format": "bestaudio/best",
+        "outtmpl": "downloads/%(title)s.%(ext)s",
+        "cookiefile": "cookies.txt",
 
-    "extractor_args": {
-        "youtube": {
-            "player_client": ["android"]
-        }
-    },
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "web"]
+            }
+        },
 
-    "noplaylist": True,
-    "quiet": True,
-    "no_warnings": True,
-    "socket_timeout": 30,
-    "retries": 10,
-    "fragment_retries": 10,
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "socket_timeout": 60,
+        "retries": 20,
+        "fragment_retries": 20,
+        "ignoreerrors": False,
+
+        "postprocessors": [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",
+        }],
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -118,19 +125,9 @@ def download_audio(query):
 
         title = clean_filename(info.get("title", "song"))
 
-        downloaded_file = ydl.prepare_filename(info)
+        file_path = f"downloads/{title}.mp3"
 
-        ext = downloaded_file.split(".")[-1]
-
-        final_file = f"downloads/{title}.{ext}"
-
-        if downloaded_file != final_file:
-            try:
-                os.rename(downloaded_file, final_file)
-            except:
-                final_file = downloaded_file
-
-        return final_file, title
+        return file_path, title
 
 
 @bot.message_handler(commands=["start"])
