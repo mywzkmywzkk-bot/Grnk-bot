@@ -1,6 +1,6 @@
 <?php
 // ضع توكن البوت الجديد هنا
-$BOT_TOKEN = "PUT_YOUR_BOT_TOKEN_HERE";
+$BOT_TOKEN = "8612351805:AAGuyw0m-9gQM0E0y6IoLjHTCJOYC4MWv7I";
 
 $BOT_USERNAME = "FHDNSSBOT";
 $DEV_USERNAME = "fvamv";
