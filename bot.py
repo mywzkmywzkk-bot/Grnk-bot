@@ -44,22 +44,22 @@ def music_keyboard():
 
     btn1 = InlineKeyboardButton(
         "اضفني للكروب",
-        switch_inline_query_current_chat="اضفني"
+        switch_inline_query=""
     )
 
     btn2 = InlineKeyboardButton(
         "المطور",
-        switch_inline_query_current_chat="المطور"
+        url=f"https://t.me/{DEV_USERNAME}"
     )
 
     btn3 = InlineKeyboardButton(
         "شراء بوت مشابه",
-        switch_inline_query_current_chat="شراء"
+        url=f"https://t.me/{DEV_USERNAME}"
     )
 
     btn4 = InlineKeyboardButton(
         "قناة البوت",
-        switch_inline_query_current_chat="القناة"
+        url=f"https://t.me/{FORCE_CHANNEL}"
     )
 
     markup.add(btn1, btn2)
