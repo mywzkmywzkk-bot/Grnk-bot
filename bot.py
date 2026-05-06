@@ -120,16 +120,16 @@ def download_audio(query):
         "quiet": True,
         "no_warnings": True,
 
-        "socket_timeout": 60,
+        "socket_timeout": 15,
         "retries": 15,
-        "fragment_retries": 15,
+        "fragment_retries": 3,
         "ignoreerrors": False,
     }
 
     sources = [
 
         {
-            "search": f"ytsearch1:{query}",
+            "search": f"ytsearch5:{query}",
             "extra": {
                 "extractor_args": {
                     "youtube": {
@@ -140,7 +140,7 @@ def download_audio(query):
         },
 
         {
-            "search": f"ytsearch10:{query}",
+            "search": f"ytsearch5:{query}",
             "extra": {
                 "extractor_args": {
                     "youtube": {
@@ -151,7 +151,7 @@ def download_audio(query):
         },
 
         {
-            "search": f"ytsearch1:{query}",
+            "search": f"ytsearch5:{query}",
             "extra": {
                 "extractor_args": {
                     "youtube": {
