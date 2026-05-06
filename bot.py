@@ -140,7 +140,7 @@ def download_audio(query):
         },
 
         {
-            "search": f"ytsearch1:{query}",
+            "search": f"ytsearch10:{query}",
             "extra": {
                 "extractor_args": {
                     "youtube": {
