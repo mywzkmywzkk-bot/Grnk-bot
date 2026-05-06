@@ -12,12 +12,12 @@ FORCE_CHANNEL = "fadifva"
 START_PHOTO = "https://i.ibb.co/xqVzNV7t/db72f6d6-2b6a-4f58-abdc-2f47a3aeb664.jpg"
 
 bot = telebot.TeleBot(BOT_TOKEN)
-
 os.makedirs("downloads", exist_ok=True)
 
 
 def clean_filename(name):
-    return re.sub(r'[\\/*?:"<>|]', "", name)
+    name = re.sub(r'[\\/*?:"<>|]', "", name)
+    return name[:80].strip()
 
 
 def is_subscribed(user_id):
@@ -30,45 +30,18 @@ def is_subscribed(user_id):
 
 def start_buttons():
     kb = InlineKeyboardMarkup(row_width=1)
-
+    kb.add(InlineKeyboardButton("➕ اضفني للكروب", url=f"https://t.me/{BOT_USERNAME}?startgroup=true"))
     kb.add(
-        InlineKeyboardButton(
-            "➕ اضفني للكروب",
-            url=f"https://t.me/{BOT_USERNAME}?startgroup=true"
-        )
+        InlineKeyboardButton("👨‍💻 المطور", url=f"https://t.me/{DEV_USERNAME}"),
+        InlineKeyboardButton("🛒 شراء بوت مشابه", url=f"https://t.me/{DEV_USERNAME}")
     )
-
-    kb.add(
-        InlineKeyboardButton(
-            "👨‍💻 المطور",
-            url=f"https://t.me/{DEV_USERNAME}"
-        ),
-        InlineKeyboardButton(
-            "🛒 شراء بوت مشابه",
-            url=f"https://t.me/{DEV_USERNAME}"
-        )
-    )
-
-    kb.add(
-        InlineKeyboardButton(
-            "📢 قناة البوت",
-            url=f"https://t.me/{FORCE_CHANNEL}"
-        )
-    )
-
+    kb.add(InlineKeyboardButton("📢 قناة البوت", url=f"https://t.me/{FORCE_CHANNEL}"))
     return kb
 
 
 def sub_buttons():
     kb = InlineKeyboardMarkup(row_width=1)
-
-    kb.add(
-        InlineKeyboardButton(
-            "📢 اشترك بالقناة",
-            url=f"https://t.me/{FORCE_CHANNEL}"
-        )
-    )
-
+    kb.add(InlineKeyboardButton("📢 اشترك بالقناة", url=f"https://t.me/{FORCE_CHANNEL}"))
     return kb
 
 
@@ -85,47 +58,98 @@ def start_text():
     )
 
 
-def download_audio(query):
+def try_download(search_query, opts):
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(search_query, download=True)
 
-    ydl_opts = {
-        "format": "bestaudio",
+        if info and "entries" in info:
+            info = info["entries"][0]
+
+        if not info:
+            raise Exception("ما حصلت نتيجة")
+
+        title = clean_filename(info.get("title", "song"))
+        file_path = ydl.prepare_filename(info)
+
+        return file_path, title
+
+
+def download_audio(query):
+    base_opts = {
+        "format": "bestaudio/best",
         "outtmpl": "downloads/%(title)s.%(ext)s",
         "cookiefile": "cookies.txt",
-
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["android", "web"]
-            }
-        },
-
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
         "socket_timeout": 60,
         "retries": 20,
         "fragment_retries": 20,
+        "ignoreerrors": False,
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    attempts = [
+        {
+            "name": "youtube_android",
+            "search": f"ytsearch1:{query}",
+            "extra": {
+                "extractor_args": {
+                    "youtube": {
+                        "player_client": ["android"]
+                    }
+                }
+            }
+        },
+        {
+            "name": "youtube_web",
+            "search": f"ytsearch1:{query}",
+            "extra": {
+                "extractor_args": {
+                    "youtube": {
+                        "player_client": ["web"]
+                    }
+                }
+            }
+        },
+        {
+            "name": "youtube_ios",
+            "search": f"ytsearch1:{query}",
+            "extra": {
+                "extractor_args": {
+                    "youtube": {
+                        "player_client": ["ios"]
+                    }
+                }
+            }
+        },
+        {
+            "name": "soundcloud",
+            "search": f"scsearch1:{query}",
+            "extra": {}
+        }
+    ]
 
-        info = ydl.extract_info(
-            f"ytsearch1:{query}",
-            download=True
-        )
+    last_error = None
 
-        if "entries" in info:
-            info = info["entries"][0]
+    for attempt in attempts:
+        try:
+            opts = base_opts.copy()
+            opts.update(attempt["extra"])
 
-        title = clean_filename(info.get("title", "song"))
+            if attempt["name"] == "soundcloud":
+                opts.pop("cookiefile", None)
 
-        file_path = ydl.prepare_filename(info)
+            return try_download(attempt["search"], opts)
 
-        return file_path, title
+        except Exception as e:
+            last_error = e
+            continue
+
+    raise Exception(f"فشل التحميل من كل المصادر:\n{last_error}")
 
 
 @bot.message_handler(commands=["start"])
 def start(message):
-
     if not is_subscribed(message.from_user.id):
         return bot.reply_to(
             message,
@@ -141,15 +165,8 @@ def start(message):
     )
 
 
-@bot.message_handler(
-    func=lambda m: m.text and (
-        m.text.startswith("يوت ")
-        or
-        m.text.startswith("تشغيل ")
-    )
-)
+@bot.message_handler(func=lambda m: m.text and (m.text.startswith("يوت ") or m.text.startswith("تشغيل ")))
 def music(message):
-
     if not is_subscribed(message.from_user.id):
         return bot.reply_to(
             message,
@@ -157,36 +174,19 @@ def music(message):
             reply_markup=sub_buttons()
         )
 
-    query = (
-        message.text
-        .replace("يوت ", "", 1)
-        .replace("تشغيل ", "", 1)
-        .strip()
-    )
+    query = message.text.replace("يوت ", "", 1).replace("تشغيل ", "", 1).strip()
 
     if not query:
-        return bot.reply_to(
-            message,
-            "اكتب اسم الأغنية."
-        )
+        return bot.reply_to(message, "اكتب اسم الأغنية.")
 
-    msg = bot.reply_to(
-        message,
-        "🔎 جاري البحث والتحميل..."
-    )
+    msg = bot.reply_to(message, "🔎 جاري البحث والتحميل...")
 
     try:
-
         file_path, title = download_audio(query)
 
-        bot.edit_message_text(
-            "📤 جاري إرسال الأغنية...",
-            message.chat.id,
-            msg.message_id
-        )
+        bot.edit_message_text("📤 جاري إرسال الأغنية...", message.chat.id, msg.message_id)
 
         with open(file_path, "rb") as audio:
-
             bot.send_audio(
                 message.chat.id,
                 audio,
@@ -196,10 +196,7 @@ def music(message):
                 reply_to_message_id=message.message_id
             )
 
-        bot.delete_message(
-            message.chat.id,
-            msg.message_id
-        )
+        bot.delete_message(message.chat.id, msg.message_id)
 
         try:
             os.remove(file_path)
@@ -207,12 +204,7 @@ def music(message):
             pass
 
     except Exception as e:
-
-        bot.edit_message_text(
-            f"❌ صار خطأ:\n{e}",
-            message.chat.id,
-            msg.message_id
-        )
+        bot.edit_message_text(f"❌ صار خطأ:\n{e}", message.chat.id, msg.message_id)
 
 
 print("Bot Running...")
