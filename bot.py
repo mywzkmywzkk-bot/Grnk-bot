@@ -88,15 +88,22 @@ def start_text():
 def download_audio(query):
 
     ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": "downloads/%(title)s.%(ext)s",
-        "cookiefile": "cookies.txt",
-        "noplaylist": True,
-        "quiet": True,
-        "no_warnings": True,
-        "socket_timeout": 30,
-        "retries": 10,
-        "fragment_retries": 10,
+    "format": "bestaudio/best",
+    "outtmpl": "downloads/%(title)s.%(ext)s",
+    "cookiefile": "cookies.txt",
+
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["android"]
+        }
+    },
+
+    "noplaylist": True,
+    "quiet": True,
+    "no_warnings": True,
+    "socket_timeout": 30,
+    "retries": 10,
+    "fragment_retries": 10,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
