@@ -3,7 +3,7 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
-BOT_TOKEN = "8612351805:AAGZdue09HZnt_2FQlFnaaP6vqEfd2IDR0k"
+BOT_TOKEN = "8612351805:AAEjvlnKwi79ej0YW7ERFI99X8AJe3gPG_o"
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
 FORCE_CHANNEL = "fadifva"
@@ -24,29 +24,19 @@ def is_subscribed(user_id):
 
 def start_buttons():
     kb = InlineKeyboardMarkup(row_width=1)
-
-    kb.add(
-        InlineKeyboardButton("➕ اضفني للكروب", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")
-    )
+    kb.add(InlineKeyboardButton("➕ اضفني للكروب", url=f"https://t.me/{BOT_USERNAME}?startgroup=true"))
     kb.add(
         InlineKeyboardButton("👨‍💻 المطور", url=f"https://t.me/{DEV_USERNAME}"),
         InlineKeyboardButton("🛒 شراء بوت مشابه", url=f"https://t.me/{DEV_USERNAME}")
     )
-    kb.add(
-        InlineKeyboardButton("📢 قناة البوت", url=f"https://t.me/{FORCE_CHANNEL}")
-    )
-
+    kb.add(InlineKeyboardButton("📢 قناة البوت", url=f"https://t.me/{FORCE_CHANNEL}"))
     return kb
 
 
 def sub_buttons():
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(
-        InlineKeyboardButton("📢 اشترك بالقناة", url=f"https://t.me/{FORCE_CHANNEL}")
-    )
-    kb.add(
-        InlineKeyboardButton("➕ اضفني للكروب", url=f"https://t.me/{BOT_USERNAME}?startgroup=true")
-    )
+    kb.add(InlineKeyboardButton("📢 اشترك بالقناة", url=f"https://t.me/{FORCE_CHANNEL}"))
+    kb.add(InlineKeyboardButton("➕ اضفني للكروب", url=f"https://t.me/{BOT_USERNAME}?startgroup=true"))
     return kb
 
 
@@ -63,17 +53,19 @@ def start_text():
 
 
 def download_audio(query):
-    search = f"scsearch1:{query}"
+    search = f"ytsearch1:{query}"
 
     opts = {
-        "format": "bestaudio[filesize<25M]/bestaudio",
+        "format": "bestaudio[filesize<25M]/bestaudio/best",
         "outtmpl": "downloads/%(id)s.%(ext)s",
+        "cookiefile": "cookies.txt",
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
-        "socket_timeout": 20,
-        "retries": 5,
-        "fragment_retries": 5,
+        "socket_timeout": 30,
+        "retries": 10,
+        "fragment_retries": 10,
+        "ignoreerrors": False,
     }
 
     with yt_dlp.YoutubeDL(opts) as ydl:
