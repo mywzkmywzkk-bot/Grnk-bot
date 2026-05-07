@@ -5,7 +5,10 @@ import aiohttp
 import yt_dlp
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, FSInputFile
+from aiogram.types import (
+    Message,
+    BufferedInputFile
+)
 from aiogram.filters import CommandStart
 
 BOT_TOKEN = "8612351805:AAGuyw0m-9gQM0E0y6IoLjHTCJOYC4MWv7I"
@@ -25,91 +28,46 @@ def clean_filename(name):
     return re.sub(r'[\\/*?:"<>|]', "", name)[:80]
 
 
+# الازرار الزرق
 def blue_keyboard():
     return {
-        "inline_keyboard": [
+        "keyboard": [
             [
                 {
-                    "text": "اضفني للكروب",
-                    "url": f"https://t.me/{BOT_USERNAME}?startgroup=true",
-                    "style": "primary"
+                    "text": "اضفني للكروب"
                 }
             ],
             [
                 {
-                    "text": "المطور",
-                    "url": f"https://t.me/{DEV_USERNAME}",
-                    "style": "primary"
+                    "text": "المطور"
                 },
                 {
-                    "text": "شراء بوت مشابه",
-                    "url": f"https://t.me/{DEV_USERNAME}",
-                    "style": "primary"
+                    "text": "شراء بوت مشابه"
                 }
             ],
             [
                 {
-                    "text": "قناة البوت",
-                    "url": f"https://t.me/{FORCE_CHANNEL}",
-                    "style": "primary"
+                    "text": "قناة البوت"
                 }
             ]
-        ]
+        ],
+        "resize_keyboard": True
     }
-
-
-def sub_keyboard():
-    return {
-        "inline_keyboard": [
-            [
-                {
-                    "text": "اشترك بالقناة",
-                    "url": f"https://t.me/{FORCE_CHANNEL}",
-                    "style": "primary"
-                }
-            ]
-        ]
-    }
-
-
-async def raw_send_photo(chat_id, photo, caption, reply_markup):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
-
-    async with aiohttp.ClientSession() as session:
-        await session.post(
-            url,
-            json={
-                "chat_id": chat_id,
-                "photo": photo,
-                "caption": caption,
-                "reply_markup": reply_markup
-            }
-        )
-
-
-async def raw_send_message(chat_id, text, reply_markup=None):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-    data = {
-        "chat_id": chat_id,
-        "text": text
-    }
-
-    if reply_markup:
-        data["reply_markup"] = reply_markup
-
-    async with aiohttp.ClientSession() as session:
-        await session.post(url, json=data)
 
 
 async def is_subscribed(user_id):
     try:
+
         member = await bot.get_chat_member(
             chat_id=f"@{FORCE_CHANNEL}",
             user_id=user_id
         )
 
-        return member.status in ["member", "administrator", "creator"]
+        return member.status in [
+            "member",
+            "administrator",
+            "creator"
+        ]
 
     except:
         return True
@@ -128,84 +86,98 @@ def start_text():
     )
 
 
+# تحميل سريع ومحسن
 def download_audio(query):
-    base_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": "downloads/%(title)s.%(ext)s",
-        "cookiefile": "cookies.txt",
+
+    ydl_opts = {
+
+        "format":
+        "bestaudio[filesize<25M]/bestaudio",
+
+        "outtmpl":
+        "downloads/%(title)s.%(ext)s",
+
         "noplaylist": True,
+
         "quiet": True,
+
         "no_warnings": True,
-        "socket_timeout": 20,
-        "retries": 5,
-        "fragment_retries": 5,
+
+        "cookiefile": "cookies.txt",
+
+        "extract_flat": False,
+
+        "socket_timeout": 10,
+
+        "retries": 2,
+
+        "fragment_retries": 2,
+
+        "concurrent_fragment_downloads": 5,
+
+        "extractor_args": {
+            "youtube": {
+                "player_client": [
+                    "android",
+                    "ios",
+                    "web"
+                ]
+            }
+        }
     }
 
-    sources = [
-        {
-            "search": f"ytsearch10:{query}",
-            "extra": {
-                "extractor_args": {
-                    "youtube": {
-                        "player_client": ["android"]
-                    }
-                }
-            }
-        },
-        {
-            "search": f"ytsearch10:{query}",
-            "extra": {
-                "extractor_args": {
-                    "youtube": {
-                        "player_client": ["ios"]
-                    }
-                }
-            }
-        },
-        {
-            "search": f"ytsearch10:{query}",
-            "extra": {
-                "extractor_args": {
-                    "youtube": {
-                        "player_client": ["web"]
-                    }
-                }
-            }
-        },
-        {
-            "search": f"scsearch5:{query}",
-            "extra": {}
-        }
+    searches = [
+
+        f"ytsearch3:{query}",
+        f"ytsearch5:{query}",
+        f"scsearch2:{query}"
+
     ]
 
     last_error = None
 
-    for source in sources:
-        try:
-            opts = base_opts.copy()
-            opts.update(source["extra"])
+    for search in searches:
 
-            if source["search"].startswith("scsearch"):
+        try:
+
+            opts = ydl_opts.copy()
+
+            if search.startswith("scsearch"):
                 opts.pop("cookiefile", None)
 
             with yt_dlp.YoutubeDL(opts) as ydl:
-                info = ydl.extract_info(source["search"], download=True)
+
+                info = ydl.extract_info(
+                    search,
+                    download=True
+                )
 
                 if info and "entries" in info:
+
                     for item in info["entries"]:
+
                         if item:
                             info = item
                             break
 
                 if not info:
-                    raise Exception("ما حصلت نتيجة")
+                    continue
 
-                title = clean_filename(info.get("title", "song"))
-                file_path = ydl.prepare_filename(info)
+                title = clean_filename(
+                    info.get(
+                        "title",
+                        "song"
+                    )
+                )
+
+                file_path = ydl.prepare_filename(
+                    info
+                )
 
                 return file_path, title
 
         except Exception as e:
+
             last_error = e
             continue
 
@@ -214,28 +186,80 @@ def download_audio(query):
 
 @dp.message(CommandStart())
 async def start(message: Message):
-    if not await is_subscribed(message.from_user.id):
-        return await raw_send_message(
-            message.chat.id,
-            "⚠️ اشترك بالقناة أولاً",
-            sub_keyboard()
+
+    if not await is_subscribed(
+        message.from_user.id
+    ):
+
+        return await message.answer(
+            "⚠️ اشترك بالقناة أولاً\n"
+            f"https://t.me/{FORCE_CHANNEL}"
         )
 
-    await raw_send_photo(
-        message.chat.id,
-        START_PHOTO,
-        start_text(),
-        blue_keyboard()
+    await bot.send_photo(
+
+        chat_id=message.chat.id,
+
+        photo=START_PHOTO,
+
+        caption=start_text(),
+
+        reply_markup=blue_keyboard()
+
     )
 
 
-@dp.message(F.text.startswith("يوت ") | F.text.startswith("تشغيل "))
+# الازرار
+@dp.message(F.text == "المطور")
+async def dev_btn(message: Message):
+
+    await message.answer(
+        f" المطور:\n"
+        f"https://t.me/{DEV_USERNAME}"
+    )
+
+
+@dp.message(F.text == "قناة البوت")
+async def channel_btn(message: Message):
+
+    await message.answer(
+        f" قناة البوت:\n"
+        f"https://t.me/{FORCE_CHANNEL}"
+    )
+
+
+@dp.message(F.text == "شراء بوت مشابه")
+async def buy_btn(message: Message):
+
+    await message.answer(
+        f" راسل المطور:\n"
+        f"https://t.me/{DEV_USERNAME}"
+    )
+
+
+@dp.message(F.text == "اضفني للكروب")
+async def add_btn(message: Message):
+
+    await message.answer(
+        f"https://t.me/{BOT_USERNAME}?startgroup=true"
+    )
+
+
+# تشغيل الاغاني
+@dp.message(
+    F.text.startswith("يوت ")
+    |
+    F.text.startswith("تشغيل ")
+)
 async def music(message: Message):
-    if not await is_subscribed(message.from_user.id):
-        return await raw_send_message(
-            message.chat.id,
-            "⚠️ اشترك بالقناة أولاً",
-            sub_keyboard()
+
+    if not await is_subscribed(
+        message.from_user.id
+    ):
+
+        return await message.answer(
+            "⚠️ اشترك بالقناة أولاً\n"
+            f"https://t.me/{FORCE_CHANNEL}"
         )
 
     query = (
@@ -246,21 +270,46 @@ async def music(message: Message):
     )
 
     if not query:
-        return await message.reply("اكتب اسم الأغنية")
 
-    msg = await message.reply("🔎 جاري البحث...")
+        return await message.answer(
+            "اكتب اسم الأغنية"
+        )
+
+    msg = await message.answer(
+        "🔎 جاري البحث السريع..."
+    )
 
     try:
-        file_path, title = await asyncio.to_thread(download_audio, query)
 
-        await msg.edit_text("📤 جاري الإرسال...")
+        file_path, title = await asyncio.to_thread(
+            download_audio,
+            query
+        )
+
+        await msg.edit_text(
+            "📤 جاري الإرسال..."
+        )
+
+        with open(file_path, "rb") as f:
+            audio_data = f.read()
+
+        audio_file = BufferedInputFile(
+            audio_data,
+            filename=f"{title}.mp3"
+        )
 
         await message.answer_audio(
-            FSInputFile(file_path),
+
+            audio=audio_file,
+
             title=title,
+
             performer="Song fadi",
+
             caption=f"🎧 {title}",
+
             reply_to_message_id=message.message_id
+
         )
 
         await msg.delete()
@@ -271,13 +320,19 @@ async def music(message: Message):
             pass
 
     except Exception as e:
-        await msg.edit_text(f"❌ صار خطأ:\n{e}")
+
+        await msg.edit_text(
+            f"❌ صار خطأ:\n{e}"
+        )
 
 
 async def main():
+
     print("Bot Running...")
+
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
+
     asyncio.run(main())
