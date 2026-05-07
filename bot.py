@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, FSInputFile
 from aiogram.filters import CommandStart
 
-BOT_TOKEN = "8612351805:AAFQJlgkDFOu4SznS-c3vYKzLZIXXmfyNFU"
+BOT_TOKEN = "8612351805:AAGuyw0m-9gQM0E0y6IoLjHTCJOYC4MWv7I"
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
 FORCE_CHANNEL = "fadifva"
