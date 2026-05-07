@@ -1,251 +1,230 @@
 import os
 import re
 import asyncio
-import aiohttp
-import yt_dlp
-
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
     Message,
-    BufferedInputFile
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    FSInputFile
 )
 from aiogram.filters import CommandStart
+import yt_dlp
 
-BOT_TOKEN = "8612351805:AAGuyw0m-9gQM0E0y6IoLjHTCJOYC4MWv7I"
+TOKEN = "8612351805:AAGuyw0m-9gQM0E0y6IoLjHTCJOYC4MWv7I"
+
 BOT_USERNAME = "FHDNSSBOT"
 DEV_USERNAME = "fvamv"
 FORCE_CHANNEL = "fadifva"
 
 START_PHOTO = "https://i.ibb.co/xqVzNV7t/db72f6d6-2b6a-4f58-abdc-2f47a3aeb664.jpg"
 
-bot = Bot(BOT_TOKEN)
+bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 os.makedirs("downloads", exist_ok=True)
 
+# ================= الازرار =================
+
+kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="اضفني للكروب")],
+        [
+            KeyboardButton(text="المطور"),
+            KeyboardButton(text="شراء بوت مشابه")
+        ],
+        [KeyboardButton(text="قناة البوت")]
+    ],
+    resize_keyboard=True
+)
+
+# ================= تنظيف الاسم =================
 
 def clean_filename(name):
     return re.sub(r'[\\/*?:"<>|]', "", name)[:80]
 
+# ================= تحميل الأغاني =================
 
-# الازرار الزرق
-def blue_keyboard():
-    return {
-        "keyboard": [
-            [
-                {
-                    "text": "اضفني للكروب"
-                }
-            ],
-            [
-                {
-                    "text": "المطور"
-                },
-                {
-                    "text": "شراء بوت مشابه"
-                }
-            ],
-            [
-                {
-                    "text": "قناة البوت"
-                }
-            ]
-        ],
-        "resize_keyboard": True
-    }
+async def download_song(query):
 
+    loop = asyncio.get_event_loop()
 
-async def is_subscribed(user_id):
-    try:
+    def run():
 
-        member = await bot.get_chat_member(
-            chat_id=f"@{FORCE_CHANNEL}",
-            user_id=user_id
-        )
+        searches = [
 
-        return member.status in [
-            "member",
-            "administrator",
-            "creator"
+            # يوتيوب اندرويد
+            {
+                "search": f"ytsearch5:{query}",
+                "client": ["android"]
+            },
+
+            # يوتيوب iOS
+            {
+                "search": f"ytsearch5:{query}",
+                "client": ["ios"]
+            },
+
+            # يوتيوب ويب
+            {
+                "search": f"ytsearch5:{query}",
+                "client": ["web"]
+            },
+
+            # ساوند كلاود
+            {
+                "search": f"scsearch5:{query}",
+                "client": None
+            }
         ]
 
-    except:
-        return True
+        last_error = None
 
+        for item in searches:
 
-def start_text():
-    return (
-        "• هلا بك في بوت ميوزك 🎧\n\n"
-        "• اضفني للكروب وارفعني مشرف\n\n"
-        "• اكتب:\n"
-        "يوت اسم الاغنية\n"
-        "تشغيل اسم الاغنية\n\n"
-        "• مثال:\n"
-        "يوت فيروز\n\n"
-        f"• المطور: @{DEV_USERNAME}"
-    )
+            try:
 
+                ydl_opts = {
 
-# تحميل سريع ومحسن
-def download_audio(query):
+                    "format":
+                    "bestaudio[filesize<25M]/bestaudio/best",
 
-    ydl_opts = {
+                    "outtmpl":
+                    "downloads/%(title)s.%(ext)s",
 
-        "format":
-        "bestaudio[filesize<25M]/bestaudio",
+                    "quiet": True,
 
-        "outtmpl":
-        "downloads/%(title)s.%(ext)s",
+                    "noplaylist": True,
 
-        "noplaylist": True,
+                    "extractaudio": True,
 
-        "quiet": True,
+                    "geo_bypass": True,
 
-        "no_warnings": True,
+                    "nocheckcertificate": True,
 
-        "cookiefile": "cookies.txt",
+                    "socket_timeout": 15,
 
-        "extract_flat": False,
+                    "retries": 3,
 
-        "socket_timeout": 10,
+                    "fragment_retries": 3,
 
-        "retries": 2,
+                    "concurrent_fragment_downloads": 5,
 
-        "fragment_retries": 2,
+                    "cookiefile": "cookies.txt",
 
-        "concurrent_fragment_downloads": 5,
+                    "extractor_args": {
+                        "youtube": {
+                            "player_client":
+                            item["client"]
+                        }
+                    } if item["client"] else {}
+                }
 
-        "extractor_args": {
-            "youtube": {
-                "player_client": [
-                    "android",
-                    "ios",
-                    "web"
-                ]
-            }
-        }
-    }
+                # ساوند كلاود بدون كوكيز
+                if item["search"].startswith("scsearch"):
+                    ydl_opts.pop("cookiefile", None)
 
-    searches = [
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
-        f"ytsearch3:{query}",
-        f"ytsearch5:{query}",
-        f"scsearch2:{query}"
-
-    ]
-
-    last_error = None
-
-    for search in searches:
-
-        try:
-
-            opts = ydl_opts.copy()
-
-            if search.startswith("scsearch"):
-                opts.pop("cookiefile", None)
-
-            with yt_dlp.YoutubeDL(opts) as ydl:
-
-                info = ydl.extract_info(
-                    search,
-                    download=True
-                )
-
-                if info and "entries" in info:
-
-                    for item in info["entries"]:
-
-                        if item:
-                            info = item
-                            break
-
-                if not info:
-                    continue
-
-                title = clean_filename(
-                    info.get(
-                        "title",
-                        "song"
+                    info = ydl.extract_info(
+                        item["search"],
+                        download=True
                     )
-                )
 
-                file_path = ydl.prepare_filename(
-                    info
-                )
+                    if "entries" in info:
 
-                return file_path, title
+                        for video in info["entries"]:
 
-        except Exception as e:
+                            if not video:
+                                continue
 
-            last_error = e
-            continue
+                            title = clean_filename(
+                                video.get(
+                                    "title",
+                                    "song"
+                                )
+                            )
 
-    raise Exception(last_error)
+                            # تخطي الشورتات
+                            if "/shorts/" in str(
+                                video.get("webpage_url", "")
+                            ):
+                                continue
 
+                            file_path = ydl.prepare_filename(
+                                video
+                            )
+
+                            return file_path, title
+
+            except Exception as e:
+
+                last_error = e
+                continue
+
+        raise Exception(last_error)
+
+    return await loop.run_in_executor(None, run)
+
+# ================= ستارت =================
 
 @dp.message(CommandStart())
 async def start(message: Message):
 
-    if not await is_subscribed(
-        message.from_user.id
-    ):
+    text = """
+• هلا بك في بوت ميوزك 🎧
 
-        return await message.answer(
-            "⚠️ اشترك بالقناة أولاً\n"
-            f"https://t.me/{FORCE_CHANNEL}"
-        )
+• اضفني للكروب وارفعني مشرف
 
-    await bot.send_photo(
+• اكتب:
+يوت اسم الاغنية
+تشغيل اسم الاغنية
+"""
 
-        chat_id=message.chat.id,
-
+    await message.answer_photo(
         photo=START_PHOTO,
-
-        caption=start_text(),
-
-        reply_markup=blue_keyboard()
-
+        caption=text,
+        reply_markup=kb
     )
 
+# ================= المطور =================
 
-# الازرار
 @dp.message(F.text == "المطور")
-async def dev_btn(message: Message):
+async def developer(message: Message):
 
     await message.answer(
-        f" المطور:\n"
         f"https://t.me/{DEV_USERNAME}"
     )
 
+# ================= القناة =================
 
 @dp.message(F.text == "قناة البوت")
-async def channel_btn(message: Message):
+async def channel(message: Message):
 
     await message.answer(
-        f" قناة البوت:\n"
         f"https://t.me/{FORCE_CHANNEL}"
     )
 
+# ================= شراء بوت =================
 
 @dp.message(F.text == "شراء بوت مشابه")
-async def buy_btn(message: Message):
+async def buy(message: Message):
 
     await message.answer(
-        f" راسل المطور:\n"
         f"https://t.me/{DEV_USERNAME}"
     )
 
+# ================= اضفني =================
 
 @dp.message(F.text == "اضفني للكروب")
-async def add_btn(message: Message):
+async def add_group(message: Message):
 
     await message.answer(
         f"https://t.me/{BOT_USERNAME}?startgroup=true"
     )
 
+# ================= تشغيل الموسيقى =================
 
-# تشغيل الاغاني
 @dp.message(
     F.text.startswith("يوت ")
     |
@@ -253,63 +232,35 @@ async def add_btn(message: Message):
 )
 async def music(message: Message):
 
-    if not await is_subscribed(
-        message.from_user.id
-    ):
-
-        return await message.answer(
-            "⚠️ اشترك بالقناة أولاً\n"
-            f"https://t.me/{FORCE_CHANNEL}"
-        )
-
     query = (
         message.text
-        .replace("يوت ", "", 1)
-        .replace("تشغيل ", "", 1)
+        .replace("يوت ", "")
+        .replace("تشغيل ", "")
         .strip()
     )
 
     if not query:
+        return
 
-        return await message.answer(
-            "اكتب اسم الأغنية"
-        )
-
-    msg = await message.answer(
+    msg = await message.reply(
         "🔎 جاري البحث السريع..."
     )
 
     try:
 
-        file_path, title = await asyncio.to_thread(
-            download_audio,
-            query
-        )
+        file_path, title = await download_song(query)
 
         await msg.edit_text(
-            "📤 جاري الإرسال..."
+            "📤 جاري الارسال..."
         )
 
-        with open(file_path, "rb") as f:
-            audio_data = f.read()
-
-        audio_file = BufferedInputFile(
-            audio_data,
-            filename=f"{title}.mp3"
-        )
+        audio = FSInputFile(file_path)
 
         await message.answer_audio(
-
-            audio=audio_file,
-
+            audio=audio,
             title=title,
-
             performer="Song fadi",
-
-            caption=f"🎧 {title}",
-
-            reply_to_message_id=message.message_id
-
+            caption=f"🎧 {title}"
         )
 
         await msg.delete()
@@ -325,6 +276,7 @@ async def music(message: Message):
             f"❌ صار خطأ:\n{e}"
         )
 
+# ================= تشغيل البوت =================
 
 async def main():
 
@@ -332,7 +284,5 @@ async def main():
 
     await dp.start_polling(bot)
 
-
 if __name__ == "__main__":
-
     asyncio.run(main())
