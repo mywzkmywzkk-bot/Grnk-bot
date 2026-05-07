@@ -1,5 +1,0 @@
-[phases.setup]
-nixPkgs = ["php", "yt-dlp"]
-
-[start]
-cmd = "php bot.php"
