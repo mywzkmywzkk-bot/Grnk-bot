@@ -143,7 +143,7 @@ def download_audio(query):
 
     sources = [
         {
-            "search": f"ytsearch5:{query}",
+            "search": f"ytsearch10:{query}",
             "extra": {
                 "extractor_args": {
                     "youtube": {
@@ -153,7 +153,7 @@ def download_audio(query):
             }
         },
         {
-            "search": f"ytsearch5:{query}",
+            "search": f"ytsearch10:{query}",
             "extra": {
                 "extractor_args": {
                     "youtube": {
@@ -163,7 +163,7 @@ def download_audio(query):
             }
         },
         {
-            "search": f"ytsearch5:{query}",
+            "search": f"ytsearch10:{query}",
             "extra": {
                 "extractor_args": {
                     "youtube": {
@@ -173,7 +173,7 @@ def download_audio(query):
             }
         },
         {
-            "search": f"scsearch3:{query}",
+            "search": f"scsearch5:{query}",
             "extra": {}
         }
     ]
